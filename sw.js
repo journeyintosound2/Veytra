@@ -1,6 +1,6 @@
 /* Offline support: keeps Veytra working without internet once it has loaded.
    Bump VERSION whenever you change any file so devices pick up the update. */
-var VERSION = 'veytra-v2';
+var VERSION = 'veytra-v3';
 var SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/styles.css',
   'js/core.js', 'js/storage.js', 'js/input.js', 'js/audio.js',

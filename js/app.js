@@ -533,8 +533,8 @@
     return s + '</svg>';
   }
 
-  function segmented(name, label, options) {
-    var cur = V.store.settings[name];
+  function segmented(name, label, options, current) {
+    var cur = current !== undefined ? current : V.store.settings[name];
     return '<fieldset class="seg"><legend>' + label + '</legend><div class="seg-opts">' +
       options.map(function (o) {
         return '<label><input type="radio" name="' + name + '" value="' + o[0] + '"' + (cur === o[0] ? ' checked' : '') + '><span>' + o[1] + '</span></label>';
@@ -615,8 +615,9 @@
           '<button class="btn" data-show-speakers>Show my speakers</button></div>'
         : '<p class="muted">This browser always uses the computer’s sound setting. On a Mac, choose the speakers in System Settings, Sound, Output.</p>') +
       '<div class="row"><button class="btn ghost" data-test-sound>Play a test sound</button></div>' +
-      segmented('appSounds', 'Drum sounds from this device', [['auto', 'On-screen pads only'], ['always', 'Kit and pads'], ['never', 'Never']]) +
-      '<p class="muted small">Choose Kit and pads to hear your drum kit through these speakers too, not just the module’s headphones.</p>' +
+      segmented('appSounds', 'Hear your kit through these speakers', [['always', 'On'], ['auto', 'Off']],
+        s.appSounds === 'always' ? 'always' : 'auto') +
+      '<p class="muted small">On plays every pad you hit through the speakers above. Off leaves the drum sounds to the drum module and its headphones. The on-screen pads always make sound.</p>' +
       '</section>' +
       '<section class="panel settings"><h2>Settings</h2>' +
       segmented('strictness', 'Timing', [['relaxed', 'Relaxed'], ['normal', 'Normal'], ['strict', 'Strict']]) +

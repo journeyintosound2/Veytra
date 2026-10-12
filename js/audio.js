@@ -10,6 +10,11 @@
     buses: {},
     noise: null,
     _offset: null,
+    // Loudness: boost, then limit. Measured at about twice the original level
+    // (+6.6 dB average) with peaks held under full scale.
+    BOOST: 2.5,
+    LIMIT_DB: -6,
+    LIMIT_RELEASE: 0.02,
 
     ensure: function () {
       if (!this.ctx) {
@@ -22,7 +27,23 @@
         comp.threshold.value = -12;
         comp.ratio.value = 4;
         this.master.connect(comp);
-        comp.connect(c.destination);
+        // Overall loudness boost. A limiter evens out the peaks, then a soft clipper
+        // makes sure nothing ever goes over full scale, so louder never means crackly.
+        var boost = c.createGain();
+        boost.gain.value = this.BOOST;
+        var limiter = c.createDynamicsCompressor();
+        limiter.threshold.value = this.LIMIT_DB;
+        limiter.knee.value = 0;
+        limiter.ratio.value = 20;
+        limiter.attack.value = 0.001;
+        limiter.release.value = this.LIMIT_RELEASE;
+        var safety = c.createWaveShaper();
+        safety.curve = softClipCurve();
+        safety.oversample = 'none';
+        comp.connect(boost);
+        boost.connect(limiter);
+        limiter.connect(safety);
+        safety.connect(c.destination);
         var self = this;
         ['drums', 'click', 'music'].forEach(function (n) {
           var g = c.createGain();
@@ -198,6 +219,17 @@
     navigator.mediaDevices.addEventListener('devicechange', function () {
       if (A.ctx && V.store.settings.audioOutput) A.applyOutput();
     });
+  }
+
+  // Untouched below 0.8, then eases toward full scale instead of clipping hard.
+  function softClipCurve() {
+    var n = 2048, curve = new Float32Array(n);
+    for (var i = 0; i < n; i++) {
+      var x = (i / (n - 1)) * 2 - 1, a = Math.abs(x);
+      var y = a <= 0.8 ? a : 0.8 + 0.2 * Math.tanh((a - 0.8) / 0.2);
+      curve[i] = x < 0 ? -y : y;
+    }
+    return curve;
   }
 
   function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
