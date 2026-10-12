@@ -1,0 +1,16 @@
+{
+  "name": "Veytra",
+  "short_name": "Veytra",
+  "description": "Learn to play drums with your electronic drum kit.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#1E1A3A",
+  "theme_color": "#1E1A3A",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
