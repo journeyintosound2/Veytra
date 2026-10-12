@@ -23,7 +23,9 @@ Every time you push changes, the site updates. If a device keeps showing an old 
 4. Hit each pad. The matching drum lights up on screen. If a pad lights the wrong drum, use **Map my kit**.
 5. Run **Check my timing** once. It measures any delay in your setup and corrects for it.
 
-The kit's own sound still comes from the module (its headphone or output jack). By default Veytra only plays its own drum sounds for the on-screen pads, so you don't hear everything twice. Change this in Settings.
+The kit's own sound still comes from the module (its headphone or output jack). By default Veytra only plays its own drum sounds for the on-screen pads, so you don't hear everything twice.
+
+To choose where Veytra's sound plays, go to **Your kit → Sound**. Pick the speakers (for example the Mac's built-in speakers if sound is going to the drum module's headphones). Chrome only lists speakers after you allow the microphone once; Veytra switches it straight off and never records. Set **Drum sounds from this device** to **Kit and pads** to hear the kit through those speakers too.
 
 ### The iPad question
 

@@ -33,9 +33,68 @@
         this.buses.click.gain.value = 0.55;
         this.buses.music.gain.value = 0.45;
         this.noise = makeNoise(c);
+        if (V.store.settings.audioOutput) this.applyOutput();
       }
       if (this.ctx.state === 'suspended') this.ctx.resume();
       return this.ctx;
+    },
+
+    /* ---------- Which speakers the sound comes out of ---------- */
+    canChooseOutput: function () {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      return !!(AC && 'setSinkId' in AC.prototype && navigator.mediaDevices && navigator.mediaDevices.enumerateDevices);
+    },
+
+    // Real output devices. Chrome hides them (empty ids) until the page has microphone permission.
+    listOutputs: function () {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return Promise.resolve([]);
+      return navigator.mediaDevices.enumerateDevices().then(function (devs) {
+        return devs.filter(function (d) {
+          return d.kind === 'audiooutput' && d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications';
+        }).map(function (d) { return { id: d.deviceId, label: d.label || 'Speaker' }; });
+      }).catch(function () { return []; });
+    },
+
+    // Ask once so Chrome reveals speaker names. The microphone stream is stopped straight away; nothing is recorded.
+    revealOutputs: function () {
+      return navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        return true;
+      }).catch(function () { return false; });
+    },
+
+    applyOutput: function () {
+      var c = this.ctx, s = V.store.settings;
+      if (!c || !c.setSinkId) return Promise.resolve(false);
+      if (!s.audioOutput) return c.setSinkId('').then(function () { return true; }).catch(function () { return false; });
+      return this.listOutputs().then(function (outs) {
+        var match = outs.find(function (o) { return o.id === s.audioOutput; }) ||
+          (s.audioOutputLabel && outs.find(function (o) { return o.label === s.audioOutputLabel; }));
+        if (!match) return false; // unplugged: stay on the computer's default
+        if (match.id !== s.audioOutput) { s.audioOutput = match.id; V.store.saveSettings(); }
+        return c.setSinkId(match.id).then(function () { return true; });
+      }).catch(function (e) { console.warn('Could not switch speakers', e); return false; });
+    },
+
+    setOutput: function (id, label) {
+      var s = V.store.settings;
+      s.audioOutput = id || '';
+      s.audioOutputLabel = id ? (label || '') : '';
+      V.store.saveSettings();
+      this.ensure();
+      return this.applyOutput();
+    },
+
+    testSound: function () {
+      var c = this.ensure();
+      if (!c) return;
+      var t = c.currentTime + 0.05;
+      this.drum('kick', t, 110);
+      this.drum('hihat', t, 90);
+      this.drum('snare', t + 0.3, 110);
+      this.drum('hihat', t + 0.3, 90);
+      this.drum('crash', t + 0.6, 100);
+      this.drum('kick', t + 0.6, 110);
     },
 
     setVolume: function (v) {
@@ -133,6 +192,13 @@
       });
     }
   };
+
+  // If the chosen speakers are unplugged and plugged back in, switch back to them.
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', function () {
+      if (A.ctx && V.store.settings.audioOutput) A.applyOutput();
+    });
+  }
 
   function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 

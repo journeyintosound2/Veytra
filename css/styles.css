@@ -336,6 +336,15 @@ body[data-screen="play"] { overflow: hidden; }
 .seg-opts span { display: block; padding: 8px 14px; border-radius: 9px; font-size: 15px; font-weight: 700; color: var(--muted); }
 .seg-opts input:checked + span { background: var(--riser-2); color: var(--head); }
 .seg-opts input:focus-visible + span { outline: 3px solid var(--head); outline-offset: 1px; }
+.picker { display: grid; gap: 6px; font-weight: 700; }
+.picker select {
+  -webkit-appearance: none; appearance: none; width: 100%; max-width: 440px;
+  padding: 12px 42px 12px 14px; font-size: 17px; font-weight: 700; color: var(--head);
+  background: var(--stage) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23A9A3CF' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center / 12px 8px;
+  border: 2px solid var(--line); border-radius: 12px;
+}
+.picker select:focus { border-color: var(--bronze); outline: none; }
+.speakers-hidden { display: grid; gap: 10px; justify-items: start; }
 .check { display: flex; gap: 10px; align-items: center; font-weight: 700; min-height: 36px; }
 .check input { width: 20px; height: 20px; accent-color: var(--bronze); }
 

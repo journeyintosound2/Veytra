@@ -608,8 +608,17 @@
       '<button class="btn" data-calibrate>Check my timing</button>' +
       '<label class="slider"><span>Timing correction</span><input type="range" name="latencyMs" min="-80" max="150" value="' + s.latencyMs + '"><output>' + s.latencyMs + ' ms</output></label>' +
       '</section>' +
+      '<section class="panel sound"><h2>Sound</h2>' +
+      (V.audio.canChooseOutput()
+        ? '<label class="picker"><span>Play Veytra’s sound through</span><select name="audioOutput"><option value="">The computer’s sound setting</option></select></label>' +
+          '<div class="speakers-hidden" hidden><p class="muted small">Chrome only lists your speakers after you allow the microphone. Veytra doesn’t record anything; it switches the microphone straight off again.</p>' +
+          '<button class="btn" data-show-speakers>Show my speakers</button></div>'
+        : '<p class="muted">This browser always uses the computer’s sound setting. On a Mac, choose the speakers in System Settings, Sound, Output.</p>') +
+      '<div class="row"><button class="btn ghost" data-test-sound>Play a test sound</button></div>' +
+      segmented('appSounds', 'Drum sounds from this device', [['auto', 'On-screen pads only'], ['always', 'Kit and pads'], ['never', 'Never']]) +
+      '<p class="muted small">Choose Kit and pads to hear your drum kit through these speakers too, not just the module’s headphones.</p>' +
+      '</section>' +
       '<section class="panel settings"><h2>Settings</h2>' +
-      segmented('appSounds', 'Drum sounds from this device', [['auto', 'On-screen pads only'], ['always', 'Always'], ['never', 'Never']]) +
       segmented('strictness', 'Timing', [['relaxed', 'Relaxed'], ['normal', 'Normal'], ['strict', 'Strict']]) +
       segmented('noteSpeed', 'Note speed', [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']]) +
       segmented('showPads', 'On-screen pads', [['auto', 'When no kit'], ['always', 'Always'], ['never', 'Never']]) +
@@ -655,7 +664,42 @@
     });
 
     // Settings
-    V.$$('.settings input, .timing input[type=range]', root).forEach(function (inp) {
+    // Speakers
+    var outSel = V.$('select[name=audioOutput]', root);
+    function fillOutputs() {
+      if (!outSel) return Promise.resolve();
+      return V.audio.listOutputs().then(function (outs) {
+        var cur = s.audioOutput;
+        var have = outs.some(function (o) { return o.id === cur; });
+        outSel.innerHTML = '<option value="">The computer’s sound setting</option>' +
+          outs.map(function (o) { return '<option value="' + esc(o.id) + '">' + esc(o.label) + '</option>'; }).join('') +
+          (cur && !have ? '<option value="' + esc(cur) + '">' + esc(s.audioOutputLabel || 'Saved speakers') + (outs.length ? ' (not connected)' : '') + '</option>' : '');
+        outSel.value = cur || '';
+        V.$('.speakers-hidden', root).hidden = outs.length > 0;
+      });
+    }
+    if (outSel) {
+      fillOutputs();
+      outSel.addEventListener('change', function () {
+        var opt = outSel.options[outSel.selectedIndex];
+        V.audio.setOutput(outSel.value, outSel.value ? opt.textContent : '').then(function (ok) {
+          if (ok) { toast(outSel.value ? 'Sound now plays through ' + opt.textContent : 'Sound follows the computer’s setting'); V.audio.testSound(); }
+          else toast('Couldn’t switch to that output. Check it’s connected.');
+        });
+      });
+      V.$('[data-show-speakers]', root).addEventListener('click', function () {
+        V.audio.revealOutputs().then(function (ok) {
+          if (!ok) { toast('Microphone access was blocked, so Chrome won’t list the speakers.'); return; }
+          fillOutputs();
+        });
+      });
+      if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+        navigator.mediaDevices.addEventListener('devicechange', fillOutputs);
+      }
+    }
+    V.$('[data-test-sound]', root).addEventListener('click', function () { V.audio.testSound(); });
+
+    V.$$('.settings input, .sound input, .timing input[type=range]', root).forEach(function (inp) {
       inp.addEventListener(inp.type === 'range' ? 'input' : 'change', function () {
         var k = inp.name;
         if (inp.type === 'checkbox') s[k] = inp.checked;
@@ -711,7 +755,12 @@
       render();
     });
 
-    return function () { offHit(); offRaw(); offStatus(); stopWizard(); };
+    return function () {
+      offHit(); offRaw(); offStatus(); stopWizard();
+      if (outSel && navigator.mediaDevices && navigator.mediaDevices.removeEventListener) {
+        navigator.mediaDevices.removeEventListener('devicechange', fillOutputs);
+      }
+    };
   };
 
   /* ---------- boot ---------- */
@@ -720,7 +769,7 @@
     var mode = V.store.settings.appSounds;
     if (mode === 'never') return;
     if (mode === 'auto' && h.source === 'midi') return;
-    V.audio.drum(h.lane, null, h.vel);
+    V.audio.drum(h.lane, null, h.vel, h.note === 46 || h.note === 26); // 46/26 = open hi-hat
   });
   V.input.onStatus(updateKitPills);
 

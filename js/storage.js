@@ -23,6 +23,8 @@
     showPads: 'auto',      // auto: when no kit is connected | always | never
     noteSpeed: 'normal',   // slow | normal | fast
     noteMap: null,         // {midiNote: lane} after "Map my kit"
+    audioOutput: '',       // speaker device id; '' = the computer's sound setting
+    audioOutputLabel: '',  // its name, to find it again if the id changes
     unlockAll: false
   };
 
